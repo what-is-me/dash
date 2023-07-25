@@ -1,0 +1,9 @@
+# Hashes of file build rules.
+fb360d6809dbe6f63ec6fa68605f1489 CMakeFiles/PMDK-complete
+2529cf1e137887f0704bf09b8454ff33 pmdk/src/PMDK-stamp/PMDK-build
+07e254bca7d20f16b105d6c79e0033fb pmdk/src/PMDK-stamp/PMDK-configure
+30a98f5d8b36e08b84121ad7309ce7ea pmdk/src/PMDK-stamp/PMDK-download
+75eaf8b951f72489d49839d14193b12d pmdk/src/PMDK-stamp/PMDK-install
+caf7e5c428c047f0b6db960f0d57300f pmdk/src/PMDK-stamp/PMDK-mkdir
+69f3f270fa01eb1e2a4a2013b66305e5 pmdk/src/PMDK-stamp/PMDK-patch
+10d9dbae59ec0ba248a35ed2e94bb582 pmdk/src/PMDK-stamp/PMDK-update

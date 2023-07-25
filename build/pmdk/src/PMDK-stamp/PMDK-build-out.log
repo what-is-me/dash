@@ -1,0 +1,8 @@
+NOTE: Skipping rpmemd because libfabric (version >= 1.4.2) is missing -- see src/librpmem/README for details
+NOTE: Skipping librpmem because libfabric (version >= 1.4.2) is missing -- see src/librpmem/README for details
+NOTE: Skipping librpmem because libfabric (version >= 1.4.2) is missing -- see src/librpmem/README for details
+NOTE: Skipping kv_server because libuv is missing -- see src/examples/libpmemobj/map/README for details.
+NOTE: Skipping pmemobjfs because fuse (version >= 2.9.1) is missing -- see src/examples/libpmemobj/pmemobjfs/README for details.
+NOTE: Skipping librpmem examples because libfabric (version >= 1.4.2) is missing -- see src/librpmem/README for details
+NOTE: Skipping pmembench because glib-2.0 is missing -- see src/benchmarks/README for details.
+NOTE: Skipping librpmem benchmark because libfabric (version >= 1.4.2) is missing -- see src/librpmem/README for details
