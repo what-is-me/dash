@@ -18,7 +18,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG -Ofast")
 
 
 ##################### PMDK ####################
-set(PMDK_PREFIX "/home/jzc/rn2db/dash/build/pmdk")
+set(PMDK_PREFIX "build/pmdk")
 # ExternalProject_Add(PMDK
 # 	      BUILD_IN_SOURCE 1
 #         BUILD_COMMAND $(MAKE) EXTRA_CFLAGS=-Wno-error
