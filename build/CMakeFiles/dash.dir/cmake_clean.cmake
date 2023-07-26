@@ -1,5 +1,6 @@
 file(REMOVE_RECURSE
   "CMakeFiles/dash.dir/src/dash.cpp.o"
+  "CMakeFiles/dash.dir/src/dash.cpp.o.d"
   "libdash.a"
   "libdash.pdb"
 )
