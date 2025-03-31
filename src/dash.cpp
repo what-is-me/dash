@@ -11,9 +11,9 @@ void DASH::Dash::Init(const char *poolFileName, size_t poolSize) {
   if (FileExists(poolFileName)) file_exist = true;
   Allocator::Initialize(poolFileName, poolSize);
 }
-void DASH::Dash::Close(){
-    Allocator::Close_pool();
-}
+
+void DASH::Dash::Close() { Allocator::Close_pool(); }
+
 DASH::Dash::Dash(size_t segmentNumber) {
   inner = reinterpret_cast<Hash<uint64_t> *>(
       Allocator::GetRoot(sizeof(extendible::Finger_EH<uint64_t>)));
@@ -25,26 +25,29 @@ DASH::Dash::Dash(size_t segmentNumber) {
     reinterpret_cast<Hash<uint64_t> *>(inner)->Recovery();
   }
 }
-int DASH::Dash::Insert(uint64_t key, uint64_t value) {
+
+bool DASH::Dash::Insert(uint64_t key, uint64_t value) {
   Value_t v;
   if ((reinterpret_cast<Hash<uint64_t> *>(inner)->Get(key, &v))) {
     v = (char *)(value);
-    reinterpret_cast<Hash<uint64_t> *>(inner)->Update(key, &v);
-    return 2;
+    return reinterpret_cast<Hash<uint64_t> *>(inner)->Update(key, &v);
   }
-  bool ret = reinterpret_cast<Hash<uint64_t> *>(inner)->Insert(key, (char *)(value), false);
-  return ret;
+  return reinterpret_cast<Hash<uint64_t> *>(inner)->Insert(key, (char *)(value),
+                                                           false);
 }
-int DASH::Dash::Update(uint64_t key, uint64_t value) {
+
+bool DASH::Dash::Update(uint64_t key, uint64_t value) {
   Value_t v = (char *)(value);
-  bool ret = reinterpret_cast<Hash<uint64_t> *>(inner)->Update(key, &v);
+  return reinterpret_cast<Hash<uint64_t> *>(inner)->Update(key, &v);
+}
+
+bool DASH::Dash::Get(uint64_t key, uint64_t *value) {
+  Value_t v;
+  bool ret = reinterpret_cast<Hash<uint64_t> *>(inner)->Get(key, &v);
+  *value = (uint64_t)(value);
   return ret;
 }
-uint64_t DASH::Dash::Remove(uint64_t key) {
-  Value_t value;
-  reinterpret_cast<Hash<uint64_t> *>(inner)->Get(key, &value);
-  return (uint64_t)(value);
-}
-uint64_t DASH::Dash::Find(uint64_t key) {
-  return (uint64_t)(reinterpret_cast<Hash<uint64_t> *>(inner)->Delete(key));
+
+bool DASH::Dash::Delete(uint64_t key) {
+  return reinterpret_cast<Hash<uint64_t> *>(inner)->Delete(key);
 }
