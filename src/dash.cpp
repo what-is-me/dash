@@ -12,11 +12,8 @@ void DASH::Dash::Init(const char *poolFileName, size_t poolSize) {
   Allocator::Initialize(poolFileName, poolSize);
 }
 
-void DASH::Dash::Close() { Allocator::Close_pool(); }
-
 DASH::Dash::Dash(size_t segmentNumber) {
-  inner = reinterpret_cast<Hash<uint64_t> *>(
-      Allocator::GetRoot(sizeof(extendible::Finger_EH<uint64_t>)));
+  inner = Allocator::GetRoot(sizeof(extendible::Finger_EH<uint64_t>));
   if (!file_exist) {
     new (inner) extendible::Finger_EH<uint64_t>(segmentNumber,
                                                 Allocator::Get()->pm_pool_);
@@ -33,7 +30,7 @@ bool DASH::Dash::Insert(uint64_t key, uint64_t value) {
     return reinterpret_cast<Hash<uint64_t> *>(inner)->Update(key, &v);
   }
   return reinterpret_cast<Hash<uint64_t> *>(inner)->Insert(key, (char *)(value),
-                                                           false);
+                                                           false) == 0;
 }
 
 bool DASH::Dash::Update(uint64_t key, uint64_t value) {
@@ -44,7 +41,7 @@ bool DASH::Dash::Update(uint64_t key, uint64_t value) {
 bool DASH::Dash::Get(uint64_t key, uint64_t *value) {
   Value_t v;
   bool ret = reinterpret_cast<Hash<uint64_t> *>(inner)->Get(key, &v);
-  *value = (uint64_t)(value);
+  *value = (uint64_t)(v);
   return ret;
 }
 
