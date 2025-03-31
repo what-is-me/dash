@@ -41,3 +41,4 @@ pmem_hash.data
 .idea
 cmake-build-*
 build/*
+.cache

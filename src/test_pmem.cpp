@@ -42,9 +42,9 @@ DEFINE_double(r, 1, "read ratio for mixed workload:0~1.0");
 DEFINE_double(s, 0, "insert ratio for mixed workload: 0~1.0");
 DEFINE_double(d, 0, "delete ratio for mixed workload:0~1.0");
 DEFINE_double(skew, 0.8, "skew factor of the workload");
-DEFINE_uint32(e, 0, "whether register epoch in application level:0/1");
-DEFINE_uint32(ms, 100, "#miliseconds to sample the operations");
-DEFINE_uint32(vl, 16, "the length of the variable length key");
+DEFINE_int32(e, 0, "whether register epoch in application level:0/1");
+DEFINE_int32(ms, 100, "#miliseconds to sample the operations");
+DEFINE_int32(vl, 16, "the length of the variable length key");
 DEFINE_uint64(ps, 30ul, "The size of the memory pool (GB)");
 DEFINE_uint64(ed, 1000, "The frequency to enroll into the epoch");
 

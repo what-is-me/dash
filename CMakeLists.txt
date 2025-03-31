@@ -17,26 +17,26 @@ if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
 endif ()
 
 ##################### PMDK ####################
-set(PMDK_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/pmdk")
-ExternalProject_Add(PMDK
-        GIT_REPOSITORY https://github.com/HaoPatrick/pmdk.git
-        GIT_TAG addr-patch
-	      BUILD_IN_SOURCE 1
-        BUILD_COMMAND $(MAKE) EXTRA_CFLAGS=-Wno-error
-        PREFIX ${PMDK_PREFIX}
-        CONFIGURE_COMMAND ""
-        INSTALL_COMMAND ""
-        LOG_DOWNLOAD ON
-        LOG_CONFIGURE ON
-        LOG_BUILD ON
-        )
+# set(PMDK_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/pmdk")
+# ExternalProject_Add(PMDK
+#         GIT_REPOSITORY https://github.com/HaoPatrick/pmdk.git
+#         GIT_TAG addr-patch
+# 	      BUILD_IN_SOURCE 1
+#         BUILD_COMMAND $(MAKE) EXTRA_CFLAGS=-Wno-error
+#         PREFIX ${PMDK_PREFIX}
+#         CONFIGURE_COMMAND ""
+#         INSTALL_COMMAND ""
+#         LOG_DOWNLOAD ON
+#         LOG_CONFIGURE ON
+#         LOG_BUILD ON
+#         )
 
-include_directories(${PMDK_PREFIX}/src/PMDK/src/include)
-if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-  link_directories(${PMDK_PREFIX}/src/PMDK/src/debug)
-else ()
-  link_directories(${PMDK_PREFIX}/src/PMDK/src/nondebug)
-endif ()
+# include_directories(${PMDK_PREFIX}/src/PMDK/src/include)
+# if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+#   link_directories(${PMDK_PREFIX}/src/PMDK/src/debug)
+# else ()
+#   link_directories(${PMDK_PREFIX}/src/PMDK/src/nondebug)
+# endif ()
 
 
 ##################### Epoch Reclaim ####################
@@ -66,7 +66,14 @@ if (USE_PMEM MATCHES "ON")
   add_executable(example src/example.cpp)
   target_link_libraries(test_pmem PRIVATE ${libs_to_link})
   target_link_libraries(example PRIVATE ${libs_to_link})
-  add_dependencies(test_pmem PMDK)
-  add_dependencies(example PMDK)
+  # add_dependencies(test_pmem PMDK)
+  # add_dependencies(example PMDK)
 else ()
 endif ()
+add_library(
+	dash
+	STATIC
+	src/dash.cpp
+)
+install (FILES src/dash.h DESTINATION include/dash)
+install (TARGETS dash DESTINATION lib)

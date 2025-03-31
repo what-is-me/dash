@@ -132,6 +132,7 @@ class LevelHashing : public Hash<T> {
   bool Delete(T);
   bool Delete(T key, bool is_in_epoch) { return Delete(key); }
   bool Get(T, Value_t*);
+  bool Update(T, Value_t*){ return true; }
   bool Get(T key, Value_t* value, bool is_in_epoch) {
     return Get(key, value);
   }

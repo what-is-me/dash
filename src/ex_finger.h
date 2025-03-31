@@ -295,6 +295,70 @@ struct Bucket {
     return false;
   }
 
+  bool check_and_update(uint8_t meta_hash, T key, bool probe, Value_t* value) {
+    int mask = 0;
+    SSE_CMP8(finger_array, meta_hash);
+    if (!probe) {
+      mask = mask & GET_BITMAP(bitmap) & (~GET_MEMBER(bitmap));
+    } else {
+      mask = mask & GET_BITMAP(bitmap) & GET_MEMBER(bitmap);
+    }
+
+    if (mask == 0) {
+      return false;
+    }
+
+    if constexpr (std::is_pointer_v<T>) {
+      /* variable-length key*/
+      string_key *_key = reinterpret_cast<string_key *>(key);
+      for (int i = 0; i < 14; i += 1) {
+        if (CHECK_BIT(mask, i) &&
+            (var_compare((reinterpret_cast<string_key *>(_[i].key))->key,
+                         _key->key,
+                         (reinterpret_cast<string_key *>(_[i].key))->length,
+                         _key->length))) {
+          _[i].value = *value;
+          return true;
+        }
+      }
+    } else {
+      /*fixed-length key*/
+      /*loop unrolling*/
+      for (int i = 0; i < 12; i += 4) {
+        if (CHECK_BIT(mask, i) && (_[i].key == key)) {
+          _[i].value = *value;
+          return true;
+        }
+
+        if (CHECK_BIT(mask, i + 1) && (_[i + 1].key == key)) {
+          _[i + 1].value = *value;
+          return true;
+        }
+
+        if (CHECK_BIT(mask, i + 2) && (_[i + 2].key == key)) {
+          _[i + 2].value = *value;
+          return true;
+        }
+
+        if (CHECK_BIT(mask, i + 3) && (_[i + 3].key == key)) {
+          _[i + 3].value = *value;
+          return true;
+        }
+      }
+
+      if (CHECK_BIT(mask, 12) && (_[12].key == key)) {
+        _[12].value = *value;
+        return true;
+      }
+
+      if (CHECK_BIT(mask, 13) && (_[13].key == key)) {
+        _[13].value = *value;
+        return true;
+      }
+    }
+    return false;
+  }
+
   inline void set_hash(int index, uint8_t meta_hash, bool probe) {
     finger_array[index] = meta_hash;
     uint32_t new_bitmap = bitmap | (1 << (index + 18));
@@ -582,7 +646,6 @@ struct Directory {
     global_depth = static_cast<size_t>(log2(capacity));
     depth_count = 0;
   }
-
   static void New(PMEMoid *dir, size_t capacity, size_t version) {
 #ifdef PMEM
     auto callback = [](PMEMobjpool *pool, void *ptr, void *arg) {
@@ -602,7 +665,7 @@ struct Directory {
                         callback, reinterpret_cast<void *>(&callback_args));
 #else
     Allocator::Allocate((void **)dir, kCacheLineSize, sizeof(Directory<T>));
-    new (*dir) Directory(capacity, version, tables);
+    new ((void **)dir) Directory(capacity, version);
 #endif
   }
 };
@@ -696,8 +759,8 @@ struct Table {
 #endif
 #else
     Allocator::ZAllocate((void **)tbl, kCacheLineSize, sizeof(Table<T>));
-    (*tbl)->local_depth = depth;
-    (*tbl)->next = pp;
+    reinterpret_cast<Table<T> *>(tbl)->local_depth = depth;
+    reinterpret_cast<Table<T> *>(tbl)->next = pp;
 #endif
   };
   ~Table(void) {}
@@ -1497,6 +1560,8 @@ class Finger_EH : public Hash<T> {
   inline bool Delete(T);
   bool Delete(T, bool);
   inline bool Get(T, Value_t*);
+  inline bool Update(T, Value_t*);
+
   bool Get(T key, Value_t*, bool is_in_epoch);
   void TryMerge(uint64_t);
   void Directory_Doubling(int x, Table<T> *new_b, Table<T> *old_b);
@@ -2127,6 +2192,136 @@ RETRY:
         Bucket<T> *stash =
             target->bucket + kNumBucket + ((i + (y & stashMask)) & stashMask);
         auto ret = stash->check_and_get(meta_hash, key, false, value);
+        if (ret == true) {
+          if (target_bucket->test_lock_version_change(old_version)) {
+            goto RETRY;
+          }
+          return true;
+        }
+      }
+    }
+  }
+FINAL:
+  return false;
+}
+
+
+template <class T>
+bool Finger_EH<T>::Update(T key, Value_t *value) {
+  uint64_t key_hash;
+  if constexpr (std::is_pointer_v<T>) {
+    key_hash = h(key->key, key->length);
+  } else {
+    key_hash = h(&key, sizeof(key));
+  }
+  auto meta_hash = ((uint8_t)(key_hash & kMask));  // the last 8 bits
+RETRY:
+  auto old_sa = dir;
+  auto x = (key_hash >> (8 * sizeof(key_hash) - old_sa->global_depth));
+  auto y = BUCKET_INDEX(key_hash);
+  auto dir_entry = old_sa->_;
+  auto old_entry = dir_entry[x];
+  Table<T> *target = reinterpret_cast<Table<T> *>(
+      reinterpret_cast<uint64_t>(old_entry) & tailMask);
+
+  if ((reinterpret_cast<uint64_t>(old_entry) & headerMask) != crash_version) {
+    recoverTable(&dir_entry[x], key_hash, x, old_sa);
+    goto RETRY;
+  }
+
+  Bucket<T> *target_bucket = target->bucket + y;
+  Bucket<T> *neighbor_bucket = target->bucket + ((y + 1) & bucketMask);
+
+  uint32_t old_version =
+      __atomic_load_n(&target_bucket->version_lock, __ATOMIC_ACQUIRE);
+  uint32_t old_neighbor_version =
+      __atomic_load_n(&neighbor_bucket->version_lock, __ATOMIC_ACQUIRE);
+
+  if ((old_version & lockSet) || (old_neighbor_version & lockSet)) {
+    goto RETRY;
+  }
+
+  /*verification procedure*/
+  old_sa = dir;
+  x = (key_hash >> (8 * sizeof(key_hash) - old_sa->global_depth));
+  if (old_sa->_[x] != old_entry) {
+    goto RETRY;
+  }
+
+  auto ret = target_bucket->check_and_update(meta_hash, key, false, value);
+  if (target_bucket->test_lock_version_change(old_version)) {
+    goto RETRY;
+  }
+  if (ret == true) {
+    return true;
+  }
+
+  /*no need for verification procedure, we use the version number of
+   * target_bucket to test whether the bucket has ben spliteted*/
+  ret = neighbor_bucket->check_and_update(meta_hash, key, true, value);
+  if (neighbor_bucket->test_lock_version_change(old_neighbor_version)) {
+    goto RETRY;
+  }
+  if (ret == true) {
+    return true;
+  }
+
+  if (target_bucket->test_stash_check()) {
+    auto test_stash = false;
+    if (target_bucket->test_overflow()) {
+      /*this only occur when the bucket has more key-values than 10 that are
+       * overfloed int he shared bucket area, therefore it needs to search in
+       * the extra bucket*/
+      test_stash = true;
+    } else {
+      /*search in the original bucket*/
+      int mask = target_bucket->overflowBitmap & overflowBitmapMask;
+      if (mask != 0) {
+        for (int i = 0; i < 4; ++i) {
+          if (CHECK_BIT(mask, i) &&
+              (target_bucket->finger_array[14 + i] == meta_hash) &&
+              (((1 << i) & target_bucket->overflowMember) == 0)) {
+            Bucket<T> *stash =
+                target->bucket + kNumBucket +
+                ((target_bucket->overflowIndex >> (i * 2)) & stashMask);
+            auto ret = stash->check_and_update(meta_hash, key, false, value);
+            if (ret == true) {
+              if (target_bucket->test_lock_version_change(old_version)) {
+                goto RETRY;
+              }
+              return true;
+            }
+          }
+        }
+      }
+
+      mask = neighbor_bucket->overflowBitmap & overflowBitmapMask;
+      if (mask != 0) {
+        for (int i = 0; i < 4; ++i) {
+          if (CHECK_BIT(mask, i) &&
+              (neighbor_bucket->finger_array[14 + i] == meta_hash) &&
+              (((1 << i) & neighbor_bucket->overflowMember) != 0)) {
+            Bucket<T> *stash =
+                target->bucket + kNumBucket +
+                ((neighbor_bucket->overflowIndex >> (i * 2)) & stashMask);
+            auto ret = stash->check_and_update(meta_hash, key, false, value);
+            if (ret == true) {
+              if (target_bucket->test_lock_version_change(old_version)) {
+                goto RETRY;
+              }
+              return true;
+            }
+          }
+        }
+      }
+      goto FINAL;
+    }
+  TEST_STASH:
+    if (test_stash == true) {
+      for (int i = 0; i < stashBucket; ++i) {
+        Bucket<T> *stash =
+            target->bucket + kNumBucket + ((i + (y & stashMask)) & stashMask);
+        auto ret = stash->check_and_update(meta_hash, key, false, value);
         if (ret == true) {
           if (target_bucket->test_lock_version_change(old_version)) {
             goto RETRY;

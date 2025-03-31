@@ -337,6 +337,7 @@ class CCEH : public Hash<T> {
   bool Delete(T);
   bool Delete(T, bool);
   bool Get(T, Value_t*);
+  bool Update(T, Value_t*){ return true; }
   bool Get(T key, Value_t*, bool is_in_epoch);
   Value_t FindAnyway(T);
   double Utilization(void);
