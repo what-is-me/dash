@@ -1,1 +1,4 @@
-build/CMakeCache.txt
+build
+.cache
+.idea
+.vscode
