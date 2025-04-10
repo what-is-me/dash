@@ -1,2 +1,0 @@
-/usr/bin/ar qc libdash.a CMakeFiles/dash.dir/src/dash.cpp.o
-/usr/bin/ranlib libdash.a

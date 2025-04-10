@@ -1,1 +1,0 @@
-/usr/bin/c++   -Wno-long-long -fPIC -march=native -O3 -g -DNDEBUG -Ofast -O3 -DNDEBUG   CMakeFiles/var_example.dir/src/var_example.cpp.o  -o var_example  -lpthread -lgflags 

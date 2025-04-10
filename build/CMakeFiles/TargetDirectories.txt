@@ -1,7 +1,0 @@
-/mnt/Falcon/dash/build/CMakeFiles/dash.dir
-/mnt/Falcon/dash/build/CMakeFiles/edit_cache.dir
-/mnt/Falcon/dash/build/CMakeFiles/rebuild_cache.dir
-/mnt/Falcon/dash/build/CMakeFiles/list_install_components.dir
-/mnt/Falcon/dash/build/CMakeFiles/install.dir
-/mnt/Falcon/dash/build/CMakeFiles/install/local.dir
-/mnt/Falcon/dash/build/CMakeFiles/install/strip.dir
